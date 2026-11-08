@@ -156,14 +156,17 @@ class _MainWrapperState extends State<MainWrapper> {
     }
   }
 
-  Future<void> _onLoginSuccess(String token, String fullCookie) async {
+  // 🌟 تم تعديل _onLoginSuccess لاستقبال isDemo
+  Future<void> _onLoginSuccess(String token, String fullCookie, bool isDemo) async {
     _sessionToken = token;
     _fullCookie = fullCookie;
-    String deviceId = await _deviceFingerprint.getOrCreateDeviceId();
-    await _sessionRepo.saveSession(cookie: fullCookie, token: token, accountType: 'DEMO');
+    _isDemo = isDemo; // تحديث الحالة
     
-    // 🌟 تمرير isDemo الصحيح إلى connect
-    _wsService.connect(token, fullCookie, deviceId, isDemo: _isDemo);
+    String deviceId = await _deviceFingerprint.getOrCreateDeviceId();
+    await _sessionRepo.saveSession(cookie: fullCookie, token: token, accountType: isDemo ? 'DEMO' : 'REAL');
+    
+    // تمرير isDemo إلى connect
+    _wsService.connect(token, fullCookie, deviceId, isDemo: isDemo);
     
     setState(() => _isLoggedIn = true);
   }
