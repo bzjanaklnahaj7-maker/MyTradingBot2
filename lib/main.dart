@@ -87,8 +87,8 @@ class _MainWrapperState extends State<MainWrapper> {
     _wsService.onConnected = () {
       if (mounted) setState(() => _isConnected = true);
       _logs.add("✅ [CONNECTED] تم الاتصال بالسيرفر.");
-      // 🌟 نرسل التصريح (الذي يحتوي على isDemo المخزن داخلياً)
-      _wsService.sendAuthorization();
+      _logs.add("📤 [SEND] إرسال authorization...");
+      _wsService.sendAuthorization(isDemo: _isDemo);
     };
     
     _wsService.onDisconnected = () {
@@ -157,16 +157,14 @@ class _MainWrapperState extends State<MainWrapper> {
     }
   }
 
-  // 🌟 استقبال isDemo من WebView
   Future<void> _onLoginSuccess(String token, String fullCookie, bool isDemo) async {
     _sessionToken = token;
     _fullCookie = fullCookie;
-    _isDemo = isDemo; 
+    _isDemo = isDemo;
     
     String deviceId = await _deviceFingerprint.getOrCreateDeviceId();
     await _sessionRepo.saveSession(cookie: fullCookie, token: token, accountType: isDemo ? 'DEMO' : 'REAL');
     
-    // تمرير isDemo إلى دالة connect
     _wsService.connect(token, fullCookie, deviceId, isDemo: isDemo);
     
     setState(() => _isLoggedIn = true);
