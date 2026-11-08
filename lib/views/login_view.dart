@@ -3,7 +3,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginView extends StatefulWidget {
-  final Function(String token, String fullCookie) onLoginSuccess;
+  final Function(String token, String fullCookie, bool isDemo) onLoginSuccess;
 
   const LoginView({super.key, required this.onLoginSuccess});
 
@@ -14,12 +14,15 @@ class LoginView extends StatefulWidget {
 class _LoginViewState extends State<LoginView> {
   InAppWebViewController? _controller;
 
-  Future<void> _extractTokenAndProceed() async {
+  Future<void> _extractTokenAndProceed(String currentUrl) async {
     try {
-      await Future.delayed(const Duration(seconds: 3));
+      // 🌟 1. تحديد isDemo تلقائياً من الرابط
+      bool isDemo = currentUrl.contains('/demo-trade');
       
+      // 2. سحب الكوكيز
       final cookieManager = CookieManager.instance();
       
+      // إجبار الحفظ (بديل flush)
       await cookieManager.deleteCookie(
         url: WebUri('https://quotex.com'),
         name: 'i_need_to_call_flush_dummy',
@@ -35,22 +38,28 @@ class _LoginViewState extends State<LoginView> {
       for (var cookie in cookies) {
         String name = cookie.name.toLowerCase();
         fullCookie += "${cookie.name}=${cookie.value}; ";
-        
         if (name.contains('session') || name.contains('token') || name.contains('ssid')) {
           token = cookie.value;
         }
       }
       
+      debugPrint("========== 🍪 الكوكيز ==========");
+      debugPrint("TOKEN: $token");
+      debugPrint("FULL_COOKIE: $fullCookie");
+      debugPrint("IS_DEMO: $isDemo");
+      debugPrint("=================================");
+
       if (token.isNotEmpty) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('qtx_session_token', token);
         await prefs.setString('full_cookie', fullCookie);
         
-        widget.onLoginSuccess(token, fullCookie);
+        // 🌟 3. تمرير isDemo إلى onLoginSuccess
+        widget.onLoginSuccess(token, fullCookie, isDemo); 
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('⚠️ فشل سحب التوكن. تأكد من تسجيل الدخول أو اضغط المفتاح.')),
+            const SnackBar(content: Text('⚠️ فشل سحب التوكن. تأكد من تسجيل الدخول.')),
           );
         }
       }
@@ -70,13 +79,6 @@ class _LoginViewState extends State<LoginView> {
         title: const Text('تسجيل الدخول Quotex', style: TextStyle(color: Color(0xFFD4AF37))),
         backgroundColor: const Color(0xFF12161F),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.vpn_key, color: Color(0xFFD4AF37)),
-            onPressed: _extractTokenAndProceed,
-            tooltip: "سحب يدوي للتوكن",
-          ),
-        ],
       ),
       body: InAppWebView(
         initialUrlRequest: URLRequest(url: WebUri('https://quotex.com/ar/sign-in')),
@@ -107,8 +109,10 @@ class _LoginViewState extends State<LoginView> {
         },
         onLoadStop: (controller, url) async {
           if (url != null) {
-            if (url.toString().contains('/trade') || url.toString().contains('/demo-trade')) {
-              await _extractTokenAndProceed();
+            String urlString = url.toString();
+            // 🌟 4. بمجرد الوصول لصفحة التداول، نسحب التوكن تلقائياً
+            if (urlString.contains('/trade') || urlString.contains('/demo-trade')) {
+              await _extractTokenAndProceed(urlString);
             }
           }
         },
