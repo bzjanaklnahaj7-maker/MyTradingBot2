@@ -170,6 +170,15 @@ class _MainWrapperState extends State<MainWrapper> {
     setState(() => _isLoggedIn = true);
   }
 
+  // 🌟 دالة جديدة لتبديل الحساب
+  void _changeAccountType(bool isDemo) {
+    _isDemo = isDemo;
+    _logs.add("🔄 تم التبديل إلى ${isDemo ? 'DEMO' : 'REAL'}");
+    if (_wsService.isConnected) {
+      _wsService.sendAuthorization(isDemo: isDemo);
+    }
+  }
+
   void _startBot(bool isDemo, double amount, bool isMartingale, double stopLoss, double stopProfit, List<String> selectedPairs) {
     _isDemo = isDemo;
     _tradeEngine.setupBot(
@@ -257,6 +266,8 @@ class _MainWrapperState extends State<MainWrapper> {
           ));
         },
         logs: _logs,
+        // 🌟 تمرير دالة التبديل
+        onSwitchAccount: _changeAccountType,
       ),
     );
   }
