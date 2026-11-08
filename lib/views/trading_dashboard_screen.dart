@@ -9,6 +9,8 @@ class TradingDashboardScreen extends StatefulWidget {
   final VoidCallback onStopBot;
   final VoidCallback onOpenChart;
   final List<String> logs;
+  // 🌟 دالة جديدة لتبديل الحساب
+  final Function(bool isDemo)? onSwitchAccount;
 
   const TradingDashboardScreen({
     super.key,
@@ -19,6 +21,7 @@ class TradingDashboardScreen extends StatefulWidget {
     required this.onStopBot,
     required this.onOpenChart,
     required this.logs,
+    this.onSwitchAccount,
   });
 
   @override
@@ -140,14 +143,22 @@ class _TradingDashboardScreenState extends State<TradingDashboardScreen> {
                             label: const Text('REAL'),
                             selected: !isDemo,
                             selectedColor: Colors.green,
-                            onSelected: (val) => setState(() => isDemo = false),
+                            onSelected: (val) {
+                              setState(() => isDemo = false);
+                              // 🌟 استدعاء دالة تبديل الحساب
+                              widget.onSwitchAccount?.call(false);
+                            },
                           ),
                           const SizedBox(width: 8),
                           ChoiceChip(
                             label: const Text('DEMO'),
                             selected: isDemo,
                             selectedColor: const Color(0xFFD4AF37),
-                            onSelected: (val) => setState(() => isDemo = true),
+                            onSelected: (val) {
+                              setState(() => isDemo = true);
+                              // 🌟 استدعاء دالة تبديل الحساب
+                              widget.onSwitchAccount?.call(true);
+                            },
                           ),
                         ],
                       ),
@@ -309,7 +320,7 @@ class _TradingDashboardScreenState extends State<TradingDashboardScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // 7. مؤقت الشمعة (يظهر عند التشغيل)
+                  // 7. مؤقت الشمعة
                   if (isBotRunning)
                     Container(
                       padding: const EdgeInsets.all(15),
@@ -366,7 +377,7 @@ class _TradingDashboardScreenState extends State<TradingDashboardScreen> {
             ),
           ),
           
-          // 🌟 شاشة السجلات (Logs) في الأسفل (مدمجة)
+          // 🌟 شاشة السجلات (Logs) في الأسفل
           Container(
             height: 100,
             padding: const EdgeInsets.all(8),
