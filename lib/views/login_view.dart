@@ -16,14 +16,12 @@ class _LoginViewState extends State<LoginView> {
 
   Future<void> _extractTokenAndProceed(String currentUrl) async {
     try {
-      // 🌟 1. تأخير 5 ثوانٍ (كما يفعل تطبيق صديقك)
+      // 🌟 تأخير 5 ثوانٍ (كما يفعل صديقك)
       debugPrint("⏳ ننتظر 5 ثوانٍ لاستقرار الجلسة...");
       await Future.delayed(const Duration(seconds: 5));
       
-      // 2. تحديد isDemo تلقائياً من الرابط
       bool isDemo = currentUrl.contains('/demo-trade');
       
-      // 3. سحب الكوكيز
       final cookieManager = CookieManager.instance();
       
       await cookieManager.deleteCookie(
@@ -41,7 +39,6 @@ class _LoginViewState extends State<LoginView> {
       for (var cookie in cookies) {
         String name = cookie.name.toLowerCase();
         fullCookie += "${cookie.name}=${cookie.value}; ";
-        // البحث عن qtx_session_token أو ssid
         if (name.contains('session') || name.contains('token') || name.contains('ssid')) {
           token = cookie.value;
         }
@@ -124,7 +121,6 @@ class _LoginViewState extends State<LoginView> {
           if (url != null) {
             String urlString = url.toString();
             if (urlString.contains('/trade') || urlString.contains('/demo-trade')) {
-              // 🌟 استدعاء الدالة (التي تحتوي على التأخير 5 ثوانٍ)
               await _extractTokenAndProceed(urlString);
             }
           }
