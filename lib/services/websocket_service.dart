@@ -12,18 +12,19 @@ class WebsocketService {
   String _token = "";
   String _fullCookie = "";
   String _deviceId = "";
-  bool _isDemo = true;
+  bool _isDemo = true; // 🌟 تخزين حالة الحساب
 
   void Function(String event, dynamic data)? onEventReceived;
   void Function(String message)? onLog;
   void Function()? onConnected;
   void Function()? onDisconnected;
 
+  // 🌟 تعديل: استقبال isDemo
   void connect(String token, String fullCookie, String deviceId, {bool isDemo = true}) {
     _token = token;
     _fullCookie = fullCookie;
     _deviceId = deviceId;
-    _isDemo = isDemo;
+    _isDemo = isDemo; // تخزين القيمة
     _isConnecting = true;
 
     try {
@@ -121,7 +122,7 @@ class WebsocketService {
       }
     }
     else if (message.startsWith('451') || message.contains('authorization/reject')) {
-      onLog?.call("❌ السيرفر رفض التصريح. تأكد من isDemo أو أعد سحب التوكن.");
+      onLog?.call("❌ خطأ 451/رفض: السيرفر رفض التصريح. تأكد من التوكن أو isDemo.");
     }
   }
 
@@ -133,13 +134,12 @@ class WebsocketService {
     }
   }
 
-  // 🌟 إرسال التصريح بدون deviceCode (كما طلب صديقك)
-  void sendAuthorization({required bool isDemo}) {
-    _isDemo = isDemo;
+  // 🌟 استخدام _isDemo في التصريح
+  void sendAuthorization() {
     sendEvent('authorization', {
       "session": _token,
-      "isDemo": isDemo ? 1 : 0,
-      "tournamentId": 0,
+      "isDemo": _isDemo ? 1 : 0,
+      "tournamentId": 0
     });
   }
 
