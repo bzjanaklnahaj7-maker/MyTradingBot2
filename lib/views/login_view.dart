@@ -16,7 +16,6 @@ class _LoginViewState extends State<LoginView> {
 
   Future<void> _extractTokenAndProceed(String currentUrl) async {
     try {
-      // 🌟 تأخير 5 ثوانٍ (كما يفعل صديقك)
       debugPrint("⏳ ننتظر 5 ثوانٍ لاستقرار الجلسة...");
       await Future.delayed(const Duration(seconds: 5));
       
