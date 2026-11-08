@@ -120,8 +120,8 @@ class WebsocketService {
          onLog?.call("⚠️ [PARSE_ERROR_ARRAY]: $e");
       }
     }
-    else if (message.startsWith('451')) {
-      onLog?.call("❌ خطأ 451: السيرفر يرفض التصريح. تأكد من isDemo.");
+    else if (message.startsWith('451') || message.contains('authorization/reject')) {
+      onLog?.call("❌ السيرفر رفض التصريح. تأكد من isDemo أو أعد سحب التوكن.");
     }
   }
 
@@ -133,14 +133,13 @@ class WebsocketService {
     }
   }
 
-  // 🌟 إرسال التصريح مع deviceCode و isDemo
+  // 🌟 إرسال التصريح بدون deviceCode (كما طلب صديقك)
   void sendAuthorization({required bool isDemo}) {
     _isDemo = isDemo;
     sendEvent('authorization', {
       "session": _token,
       "isDemo": isDemo ? 1 : 0,
       "tournamentId": 0,
-      "deviceCode": _deviceId, // 🌟 إضافة بصمة الجهاز
     });
   }
 
