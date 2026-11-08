@@ -12,14 +12,13 @@ class DeviceFingerprint {
       return existingId;
     }
     
-    // 🌟 توليد fingerprint حقيقي باستخدام device_info_plus
+    // توليد fingerprint حقيقي باستخدام device_info_plus
     final deviceInfo = DeviceInfoPlugin();
     String newId = "";
     try {
       final androidInfo = await deviceInfo.androidInfo;
       newId = "${androidInfo.id}-${androidInfo.model}-${androidInfo.brand}";
     } catch (e) {
-      // إذا فشل (مثلاً على iOS)، استخدم قيمة عشوائية
       newId = DateTime.now().millisecondsSinceEpoch.toString();
     }
     
