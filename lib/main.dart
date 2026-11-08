@@ -151,6 +151,9 @@ class _MainWrapperState extends State<MainWrapper> {
     else if (event == 'orders/error') {
       _logs.add("⚠️ خطأ في الصفقة: $data");
     }
+    else if (event == 'authorization/reject' || event == '451') {
+      _logs.add("❌ السيرفر رفض التصريح. تأكد من isDemo أو أعد سحب التوكن.");
+    }
   }
 
   Future<void> _onLoginSuccess(String token, String fullCookie) async {
@@ -159,7 +162,7 @@ class _MainWrapperState extends State<MainWrapper> {
     String deviceId = await _deviceFingerprint.getOrCreateDeviceId();
     await _sessionRepo.saveSession(cookie: fullCookie, token: token, accountType: 'DEMO');
     
-    // 🌟 تمرير isDemo إلى connect
+    // 🌟 تمرير isDemo الصحيح إلى connect
     _wsService.connect(token, fullCookie, deviceId, isDemo: _isDemo);
     
     setState(() => _isLoggedIn = true);
