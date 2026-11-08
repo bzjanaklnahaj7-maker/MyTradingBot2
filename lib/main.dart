@@ -65,7 +65,6 @@ class _MainWrapperState extends State<MainWrapper> {
   final ChartEngine _chartEngine = ChartEngine();
   
   bool _isLoggedIn = false;
-  bool _isConnected = false;
   double _currentBalance = 0.0;
   List<InstrumentModel> _availablePairs = [];
   List<String> _logs = [];
@@ -85,14 +84,13 @@ class _MainWrapperState extends State<MainWrapper> {
     };
     
     _wsService.onConnected = () {
-      if (mounted) setState(() => _isConnected = true);
+      if (mounted) setState(() {});
       _logs.add("✅ [CONNECTED] تم الاتصال بالسيرفر.");
-      _logs.add("📤 [SEND] إرسال authorization...");
       _wsService.sendAuthorization(isDemo: _isDemo);
     };
     
     _wsService.onDisconnected = () {
-      if (mounted) setState(() => _isConnected = false);
+      if (mounted) setState(() {});
       _logs.add("❌ [DISCONNECTED] تم قطع الاتصال.");
     };
     
@@ -170,7 +168,6 @@ class _MainWrapperState extends State<MainWrapper> {
     setState(() => _isLoggedIn = true);
   }
 
-  // 🌟 دالة جديدة لتبديل الحساب
   void _changeAccountType(bool isDemo) {
     _isDemo = isDemo;
     _logs.add("🔄 تم التبديل إلى ${isDemo ? 'DEMO' : 'REAL'}");
@@ -254,7 +251,7 @@ class _MainWrapperState extends State<MainWrapper> {
       body: TradingDashboardScreen(
         availablePairs: _availablePairs,
         currentBalance: _currentBalance,
-        isConnected: _isConnected,
+        isConnected: _wsService.isConnected,
         onStartBot: _startBot,
         onStopBot: _stopBot,
         onOpenChart: () {
@@ -266,7 +263,6 @@ class _MainWrapperState extends State<MainWrapper> {
           ));
         },
         logs: _logs,
-        // 🌟 تمرير دالة التبديل
         onSwitchAccount: _changeAccountType,
       ),
     );
