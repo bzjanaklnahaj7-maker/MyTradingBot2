@@ -84,24 +84,20 @@ class _MainWrapperState extends State<MainWrapper> {
       if (mounted) setState(() => _logs.add(msg));
     };
     
-    // 🌟 تأكد من إغلاق القوس هنا
     _wsService.onConnected = () {
       if (mounted) setState(() => _isConnected = true);
       _logs.add("✅ [CONNECTED] تم الاتصال بالسيرفر.");
-      _logs.add("📤 [SEND] إرسال authorization...");
       _wsService.sendAuthorization(isDemo: _isDemo);
-    }; 
+    };
     
-    // 🌟 تأكد من إغلاق القوس هنا
     _wsService.onDisconnected = () {
       if (mounted) setState(() => _isConnected = false);
       _logs.add("❌ [DISCONNECTED] تم قطع الاتصال.");
-    }; 
+    };
     
-    // 🌟 تأكد من إغلاق القوس هنا
     _wsService.onEventReceived = (event, data) {
       _handleServerEvent(event, data);
-    }; 
+    };
   }
 
   Future<void> _fetchBalance() async {
@@ -163,7 +159,8 @@ class _MainWrapperState extends State<MainWrapper> {
     String deviceId = await _deviceFingerprint.getOrCreateDeviceId();
     await _sessionRepo.saveSession(cookie: fullCookie, token: token, accountType: 'DEMO');
     
-    _wsService.connect(token, fullCookie, deviceId);
+    // 🌟 تمرير isDemo إلى connect
+    _wsService.connect(token, fullCookie, deviceId, isDemo: _isDemo);
     
     setState(() => _isLoggedIn = true);
   }
