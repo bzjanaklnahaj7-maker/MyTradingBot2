@@ -1,80 +1,146 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'dart:io';
+import 'package:web_socket_channel/io.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 class WebsocketService {
-  IO.Socket? _socket;
+  WebSocketChannel? _channel;
+  Timer? _heartbeatTimer;
+  Timer? _reconnectTimer;
+  bool _isConnecting = false;
   String _token = "";
   String _fullCookie = "";
   String _deviceId = "";
+  bool _isDemo = true;
 
   void Function(String event, dynamic data)? onEventReceived;
   void Function(String message)? onLog;
   void Function()? onConnected;
   void Function()? onDisconnected;
 
-  void connect(String token, String fullCookie, String deviceId) {
+  void connect(String token, String fullCookie, String deviceId, {bool isDemo = true}) {
     _token = token;
     _fullCookie = fullCookie;
     _deviceId = deviceId;
+    _isDemo = isDemo;
+    _isConnecting = true;
 
     try {
-      onLog?.call("⏳ جاري الاتصال بسيرفر Quotex (Socket.IO)...");
-
-      // 🌟 استخدام socket_io_client مع الإعدادات الصحيحة
-      _socket = IO.io('https://ws2.quotex.com', 
-        IO.OptionBuilder()
-          .setTransports(['websocket'])
-          .setPath('/socket.io/')
-          .setQuery({'EIO': '4', 'transport': 'websocket'})
-          .setExtraHeaders({
-            'Cookie': _fullCookie,
-            'User-Agent': 'Mozilla/5.0 (Linux; Android 10)',
-          })
-          .disableAutoConnect()
-          .build()
+      onLog?.call("⏳ جاري الاتصال بسيرفر Quotex...");
+      
+      final uri = Uri.parse('wss://ws2.quotex.com/socket.io/?EIO=4&transport=websocket');
+      
+      _channel = IOWebSocketChannel.connect(
+        uri,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Linux; Android 10)',
+          'Origin': 'https://quotex.com',
+          'Cookie': _fullCookie,
+        },
+        pingInterval: const Duration(seconds: 25),
       );
 
-      _socket!.connect();
+      _channel!.stream.listen(
+        (dynamic message) {
+          String textMessage = "";
+          if (message is String) {
+            textMessage = message;
+          } else if (message is List<int>) {
+            try {
+              textMessage = utf8.decode(message);
+            } catch (e) {
+              onLog?.call("⚠️ فشل فك تشفير رسالة ثنائية: $e");
+              return;
+            }
+          }
 
-      _socket!.onConnect((_) {
-        onLog?.call("✅ [CONNECTED] تم الاتصال بالسيرفر (Socket.IO).");
-        onConnected?.call();
-      });
-
-      _socket!.onConnectError((error) {
-        onLog?.call("🚨 [SOCKET_ERROR]: $error");
-      });
-
-      _socket!.onDisconnect((_) {
-        onLog?.call("⚠️ [DISCONNECTED] تم قطع الاتصال.");
-        onDisconnected?.call();
-      });
-
-      // 🌟 استقبال الأحداث (بما في ذلك المصفوفة الخام)
-      _socket!.onAny((event, data) {
-        onLog?.call("📥 [EVENT]: $event | DATA: $data");
-        onEventReceived?.call(event, data);
-      });
+          onLog?.call("📥 [RAW]: $textMessage");
+          _handleMessage(textMessage);
+        },
+        onError: (error) {
+          onLog?.call("🚨 [SOCKET_ERROR]: $error");
+          _handleDisconnect();
+        },
+        onDone: () {
+          onLog?.call("⚠️ تم إغلاق الاتصال. كود الإغلاق: ${_channel?.closeCode}");
+          _handleDisconnect();
+        },
+      );
 
     } catch (e) {
       onLog?.call("❌ فشل إنشاء الاتصال: $e");
+      _handleDisconnect();
+    }
+  }
+
+  void _handleDisconnect() {
+    _isConnecting = false;
+    onDisconnected?.call();
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(const Duration(seconds: 3), () {
+      if (!_isConnecting) {
+        onLog?.call("🔄 جاري إعادة الاتصال...");
+        connect(_token, _fullCookie, _deviceId, isDemo: _isDemo);
+      }
+    });
+  }
+
+  void _handleMessage(String message) {
+    if (message.startsWith('0')) {
+      _channel?.sink.add('40');
+    } else if (message.startsWith('40')) {
+      _isConnecting = false;
+      onConnected?.call();
+      _startHeartbeat();
+    } else if (message == '2') {
+      _channel?.sink.add('3');
+    } else if (message.startsWith('42')) {
+      try {
+        String jsonString = message.substring(2);
+        List<dynamic> parsed = jsonDecode(jsonString);
+        if (parsed.isNotEmpty) {
+          String event = parsed[0];
+          dynamic data = parsed.length > 1 ? parsed[1] : null;
+          onLog?.call("📌 [EVENT]: $event | DATA: $data");
+          onEventReceived?.call(event, data);
+        }
+      } catch (e) {
+        onLog?.call("⚠️ [PARSE_ERROR]: $e");
+      }
+    } 
+    else if (message.startsWith('[')) {
+      try {
+        dynamic parsed = jsonDecode(message);
+        if (parsed is List) {
+           onLog?.call("📌 [RAW ARRAY]: استلام مصفوفة بيانات");
+           onEventReceived?.call("", parsed);
+        }
+      } catch (e) {
+         onLog?.call("⚠️ [PARSE_ERROR_ARRAY]: $e");
+      }
+    }
+    else if (message.startsWith('451')) {
+      onLog?.call("❌ خطأ 451: السيرفر يرفض التصريح. تأكد من isDemo.");
     }
   }
 
   void sendEvent(String event, [dynamic data]) {
-    if (_socket != null) {
-      _socket!.emit(event, data);
+    if (_channel != null) {
+      List<dynamic> payload = data != null ? [event, data] : [event];
+      String jsonString = jsonEncode(payload);
+      _channel!.sink.add('42$jsonString');
     }
   }
 
-  // 🌟 إرسال التصريح مع deviceCode
+  // 🌟 إرسال التصريح مع deviceCode و isDemo
   void sendAuthorization({required bool isDemo}) {
+    _isDemo = isDemo;
     sendEvent('authorization', {
       "session": _token,
       "isDemo": isDemo ? 1 : 0,
       "tournamentId": 0,
-      "deviceCode": _deviceId,
+      "deviceCode": _deviceId, // 🌟 إضافة بصمة الجهاز
     });
   }
 
@@ -104,9 +170,22 @@ class WebsocketService {
     });
   }
 
+  void _startHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (_channel != null) {
+        sendEvent('tick');
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
   void disconnect() {
-    _socket?.disconnect();
-    _socket = null;
+    _heartbeatTimer?.cancel();
+    _reconnectTimer?.cancel();
+    _channel?.sink.close();
+    _channel = null;
     onLog?.call("🛑 تم قطع الاتصال.");
   }
 }
