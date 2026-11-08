@@ -12,19 +12,18 @@ class WebsocketService {
   String _token = "";
   String _fullCookie = "";
   String _deviceId = "";
-  bool _isDemo = true; // 🌟 تخزين حالة الحساب
+  bool _isDemo = true;
 
   void Function(String event, dynamic data)? onEventReceived;
   void Function(String message)? onLog;
   void Function()? onConnected;
   void Function()? onDisconnected;
 
-  // 🌟 تعديل: استقبال isDemo
   void connect(String token, String fullCookie, String deviceId, {bool isDemo = true}) {
     _token = token;
     _fullCookie = fullCookie;
     _deviceId = deviceId;
-    _isDemo = isDemo; // تخزين القيمة
+    _isDemo = isDemo;
     _isConnecting = true;
 
     try {
@@ -35,7 +34,7 @@ class WebsocketService {
       _channel = IOWebSocketChannel.connect(
         uri,
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Linux; Android 10)',
+          'User-Agent': 'Mozilla/5.0 (Linux; Android 12; Pixel 4 Build/SP2A.220505.008; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/95.0.4638.74 Mobile Safari/537.36',
           'Origin': 'https://quotex.com',
           'Cookie': _fullCookie,
         },
@@ -122,7 +121,7 @@ class WebsocketService {
       }
     }
     else if (message.startsWith('451') || message.contains('authorization/reject')) {
-      onLog?.call("❌ خطأ 451/رفض: السيرفر رفض التصريح. تأكد من التوكن أو isDemo.");
+      onLog?.call("❌ السيرفر رفض التصريح. تأكد من isDemo أو أعد سحب التوكن.");
     }
   }
 
@@ -134,12 +133,13 @@ class WebsocketService {
     }
   }
 
-  // 🌟 استخدام _isDemo في التصريح
-  void sendAuthorization() {
+  // 🌟 إرسال التصريح بدون deviceCode (كما في التطبيق الأصلي)
+  void sendAuthorization({required bool isDemo}) {
+    _isDemo = isDemo;
     sendEvent('authorization', {
       "session": _token,
-      "isDemo": _isDemo ? 1 : 0,
-      "tournamentId": 0
+      "isDemo": isDemo ? 1 : 0,
+      "tournamentId": 0,
     });
   }
 
