@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "405813150698",
+    "project_id": "alking-35fdf",
+    "storage_bucket": "alking-35fdf.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:405813150698:android:510f958f9f1548bd732893",
+        "android_client_info": {
+          "package_name": "com.example.alking"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyALm-E9uHd6tniv9x617SwXchVWgISE68o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
