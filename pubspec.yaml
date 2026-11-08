@@ -10,21 +10,17 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  # مكتبات الشبكة والاتصال (تم استبدال web_socket_channel بـ socket_io_client)
-  socket_io_client: ^2.0.3+1
+  # 🌟 العودة إلى web_socket_channel
+  web_socket_channel: ^2.4.0
   http: ^1.2.0
-  # مكتبات التخزين والجلسات
   shared_preferences: ^2.2.2
-  device_info_plus: ^10.1.0 # 🌟 لإضافة fingerprint حقيقي
-  # مكتبات الواجهات والمتصفح
+  device_info_plus: ^10.1.0
   flutter_inappwebview: ^6.0.0
   permission_handler: ^11.3.0
   candlesticks: ^2.1.0
   intl: ^0.19.0
-  # مكتبات الخلفية والإشعارات
   flutter_foreground_task: ^8.10.0
   flutter_local_notifications: ^17.0.0
-  # Firebase (لإشعارات FCM)
   firebase_core: ^2.27.0
   firebase_messaging: ^14.7.19
 
