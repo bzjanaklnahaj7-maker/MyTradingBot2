@@ -16,13 +16,12 @@ class _LoginViewState extends State<LoginView> {
 
   Future<void> _extractTokenAndProceed(String currentUrl) async {
     try {
-      // 🌟 1. تحديد isDemo تلقائياً من الرابط
+      // 1. تحديد isDemo تلقائياً من الرابط
       bool isDemo = currentUrl.contains('/demo-trade');
       
       // 2. سحب الكوكيز
       final cookieManager = CookieManager.instance();
       
-      // إجبار الحفظ (بديل flush)
       await cookieManager.deleteCookie(
         url: WebUri('https://quotex.com'),
         name: 'i_need_to_call_flush_dummy',
@@ -54,7 +53,6 @@ class _LoginViewState extends State<LoginView> {
         await prefs.setString('qtx_session_token', token);
         await prefs.setString('full_cookie', fullCookie);
         
-        // 🌟 3. تمرير isDemo إلى onLoginSuccess
         widget.onLoginSuccess(token, fullCookie, isDemo); 
       } else {
         if (mounted) {
@@ -79,6 +77,16 @@ class _LoginViewState extends State<LoginView> {
         title: const Text('تسجيل الدخول Quotex', style: TextStyle(color: Color(0xFFD4AF37))),
         backgroundColor: const Color(0xFF12161F),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.vpn_key, color: Color(0xFFD4AF37)),
+            onPressed: () async {
+              Uri? currentUrl = await _controller?.getUrl();
+              if (currentUrl != null) await _extractTokenAndProceed(currentUrl.toString());
+            },
+            tooltip: "اتصال يدوي",
+          ),
+        ],
       ),
       body: InAppWebView(
         initialUrlRequest: URLRequest(url: WebUri('https://quotex.com/ar/sign-in')),
@@ -93,7 +101,7 @@ class _LoginViewState extends State<LoginView> {
           clearCache: false,
           incognito: false,
           useHybridComposition: true,
-          userAgent: "Mozilla/5.0 (Linux; Android 11; RMX3261 Build/RP1A.201005.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/144.0.7559.132 Mobile Safari/537.36",
+          userAgent: "Mozilla/5.0 (Linux; Android 12; Pixel 4 Build/SP2A.220505.008; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/95.0.4638.74 Mobile Safari/537.36",
         ),
         shouldOverrideUrlLoading: (controller, navigationAction) async {
           return NavigationActionPolicy.ALLOW;
@@ -110,7 +118,6 @@ class _LoginViewState extends State<LoginView> {
         onLoadStop: (controller, url) async {
           if (url != null) {
             String urlString = url.toString();
-            // 🌟 4. بمجرد الوصول لصفحة التداول، نسحب التوكن تلقائياً
             if (urlString.contains('/trade') || urlString.contains('/demo-trade')) {
               await _extractTokenAndProceed(urlString);
             }
